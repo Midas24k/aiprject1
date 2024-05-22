@@ -1,12 +1,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { OpenAI } = require("@langchain/openai");
+const { PromptTemplate } = require("@langchain/core/prompts");
 require('dotenv').config();
 
 const app = express();
 const port = 3000;
 
-//Middleware to paarse the JSON requests
+//Middleware to parse the JSON requests
 app.use(bodyParser.json());
 
 const model = new OpenAI({
@@ -17,7 +18,11 @@ const model = new OpenAI({
 
 const promptFunc = async (input) => {
     try {
-        const res = await model.invoke(input);
+        // Format the prompt with the user input
+        const promptInput = await prompt.format({ 
+          question: input 
+        });
+        const res = await model.invoke(promptInput);
         return res;
     }
     catch (err) {
@@ -25,6 +30,12 @@ const promptFunc = async (input) => {
         throw err;
     }
 };
+
+// Instantiation of a new object called "prompt" using the PromptTemplate class
+const prompt = new PromptTemplate({
+  template:"You are a programming expert and will answer the user’s coding questions as thoroughly as possible using JavaScript. If the question is unrelated to coding, do not answer.\n{question}",
+  inputVariables: ["question"]
+});
 
 // Endpoint to handle request
 app.post('/ask', async (req, res) => {
@@ -35,7 +46,7 @@ app.post('/ask', async (req, res) => {
         return res.status(400).json({ error: 'Please provide a question in the request body.' });
       }
   
-      const result = await promptFunc(text);
+      const result = await promptFunc(userQuestion);
       res.json({ result });
     } catch (error) {
       console.error('Error:', error.message);
@@ -47,5 +58,6 @@ app.post('/ask', async (req, res) => {
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
+    console.log('the server works!')
   });
 
